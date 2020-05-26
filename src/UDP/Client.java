@@ -3,7 +3,7 @@ package UDP;
 import java.io.*;
 import java.net.*;
 
-class UDPClient {
+class Client {
 
     public void send(String message) throws Exception{
         DatagramSocket clientSocket = new DatagramSocket();

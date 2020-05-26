@@ -2,19 +2,21 @@ package UDP;
 
 import java.net.*;
 
-class UDPServer {
+class Server {
     private int port = 9876;
     private byte[] receiveData;
     private byte[] sendData;
     private DatagramSocket serverSocket;
 
-    public UDPServer() throws SocketException {
+    public Server() throws SocketException {
         serverSocket = new DatagramSocket(port);
         receiveData = new byte[1024];
         sendData = new byte[1024];
     }
 
-    public void waiting() throws Exception {
+    public void waiting(DatagramPacket packet) throws Exception {
+
+
 
         while(true) {
             DatagramPacket receivePacket = new DatagramPacket(receiveData,receiveData.length);
