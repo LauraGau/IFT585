@@ -2,36 +2,61 @@ package UDP;
 
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class Sender {
+    public static final int MAX_BYTES_PACKET = 65000;
+    public static final int TIMEOUT = 60;
+    public static final int WINDOW = 4;
 
-    final int WSIZE = 4;
-    final int PACKET_LENGTH = 65000;
-    InetAddress IPAddress = InetAddress.getByName("localhost");
+    DatagramSocket senderSocket = new DatagramSocket();
+    int indexOfPacketToSend = 0;
+    InetAddress ipAddressToSend = InetAddress.getByName("localhost");
+    int lastAckReceived = 0;
+    int lastSeqNumberSent = 0;
+    ArrayList<DatagramPacket> packetsAlreadySent = new ArrayList<>();
 
-    public Sender() throws UnknownHostException {
+    public Sender() throws SocketException, UnknownHostException {
     }
 
     public void send(ArrayList<DatagramPacket> packetlist) throws IOException {
         System.out.println("Sending packets...");
 
-        DatagramSocket clientSocket = new DatagramSocket();
+        while(true) {
 
-        for(DatagramPacket packet : packetlist) {
-            clientSocket.send(packet);
+            while(lastSeqNumberSent - lastAckReceived < WINDOW && packetsAlreadySent.size() < packetlist.size()) {
+                senderSocket.send(packetlist.get(indexOfPacketToSend));
+                packetsAlreadySent.add(packetlist.get(indexOfPacketToSend));
+                lastSeqNumberSent++;
+                indexOfPacketToSend++;
+            }
+
+            DatagramPacket ackPacket = new DatagramPacket(new byte[4], 4);
+
+            try{
+                senderSocket.setSoTimeout(TIMEOUT);
+                senderSocket.receive(ackPacket);
+                lastAckReceived = Utils.byteArrayToInt(ackPacket.getData());
+
+                /* à modifier avec le numéro du dernier paquet */
+                if(lastAckReceived == 0) {
+                    break;
+                }
+
+            } catch (SocketTimeoutException s) {
+                for(int i = lastAckReceived; i < lastSeqNumberSent; i++) {
+                    senderSocket.send(packetsAlreadySent.get(i));
+                }
+            }
         }
-    }
-
-    public void receiveAck(DatagramPacket packet) {
-
+        System.out.println("All packets sent and received.");
     }
 
     public ArrayList<DatagramPacket> splitFile(byte[] file) {
         System.out.println("Splitting file into packets...");
-        ArrayList<DatagramPacket> sendPacketList = new ArrayList<>();
-        byte[] sendPacket = new byte[PACKET_LENGTH];
+
+        ArrayList<DatagramPacket> listOfPacketsToSend = new ArrayList<>();
+        byte[] packetToSend = new byte[MAX_BYTES_PACKET];
         int seqNumber = 0;
         boolean isLast;
 
@@ -44,18 +69,18 @@ public class Sender {
 
             // first 4 bytes are for the sequence number
             for(int j = 0; j < 4; j++) {
-                sendPacket[j] = seqNumberInBytes[j];
+                packetToSend[j] = seqNumberInBytes[j];
             }
 
             // 5th byte is for the the last packet
-            sendPacket[4] = isLastInBytes[0];
+            packetToSend[4] = isLastInBytes[0];
 
             // rest of bytes if for the data split in the total file
-            for(int k = 5; k < PACKET_LENGTH; k++) {
-                sendPacket[k] = file[i];
+            for(int k = 5; k < MAX_BYTES_PACKET; k++) {
+                packetToSend[k] = file[i];
             }
-            sendPacketList.add(new DatagramPacket(sendPacket, sendPacket.length, IPAddress, 9876));
+            listOfPacketsToSend.add(new DatagramPacket(packetToSend, packetToSend.length, ipAddressToSend, 9876));
         }
-        return sendPacketList;
+        return listOfPacketsToSend;
     }
 }

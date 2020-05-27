@@ -9,32 +9,44 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Receiver {
-    private int lastAck;
-    private List<Integer> ackSent;
-    private int waitingSeqNumber;
-    DatagramSocket receiverSocket;
+    int nextSeqNumber = 0;
+    ArrayList<byte[]> receivedPackets = new ArrayList<>();
+    DatagramSocket receiverSocket = new DatagramSocket(9876);
+
 
     public Receiver() throws SocketException {
-        receiverSocket = new DatagramSocket();
     }
 
-    public void receiveAsClient(DatagramPacket packet) throws IOException {
-        System.out.println("Received data from server.");
+    public void waitAndReceive() throws IOException {
+        System.out.println("Receiving packets from the sender.");
 
-        byte[] receiveData = new byte[packet.getData().length - 5];
+        byte[] receivedData = new byte[64995];
 
-        for(int i = 5; i < packet.getData().length; i++) {
-            receiveData[i] = packet.getData()[i];
+        while(true) {
+            DatagramPacket currentPacket = new DatagramPacket(receivedData, receivedData.length);
+            receiverSocket.receive(currentPacket);
+
+            if(Utils.getPacketSeqNumber(currentPacket) == nextSeqNumber && Utils.byteArrayToBool(currentPacket.getData()[4])){
+                nextSeqNumber++;
+                receivedPackets.add(currentPacket.getData());
+                System.out.println("Last packet.");
+                break;
+
+            } else if(Utils.getPacketSeqNumber(currentPacket) == nextSeqNumber) {
+                receivedPackets.add(currentPacket.getData());
+                System.out.println("Receiving packet " + nextSeqNumber);
+                nextSeqNumber++;
+            }
+            sendAck(currentPacket);
+
         }
+        System.out.println("Received all the packets and sent all the ACKs.");
 
-        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        receiverSocket.receive(receivePacket);
-        receiverSocket.close();
     }
 
-    public void sendAck(int seqNumber, InetAddress ipAdress) throws IOException {
-        byte[] seqNumberInBytes = Utils.intToByteArray(seqNumber);
-        DatagramPacket packet = new DatagramPacket(seqNumberInBytes, seqNumberInBytes.length, ipAdress, 9876);
-        receiverSocket.send(packet);
+    public void sendAck(DatagramPacket packet) throws IOException {
+        byte[] ackData = Utils.intToByteArray(Utils.getPacketSeqNumber(packet));
+        DatagramPacket ackPacket = new DatagramPacket(ackData, ackData.length, packet.getAddress(), packet.getPort());
+        receiverSocket.send(ackPacket);
     }
 }

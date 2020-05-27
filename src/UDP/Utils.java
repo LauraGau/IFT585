@@ -1,5 +1,6 @@
 package UDP;
 
+import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
 
 public class Utils {
@@ -18,5 +19,15 @@ public class Utils {
 
     public static boolean byteArrayToBool(byte b) {
         return b == 1;
+    }
+
+    public static int getPacketSeqNumber(DatagramPacket packet) {
+        byte[] seqNumberInBytes = new byte[4];
+
+        for(int i = 0; i < 4; i++) {
+            seqNumberInBytes[i] = packet.getData()[i];
+        }
+
+        return byteArrayToInt(seqNumberInBytes);
     }
 }
