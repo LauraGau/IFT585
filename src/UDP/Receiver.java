@@ -24,11 +24,13 @@ public class Receiver {
             DatagramPacket currentPacket = new DatagramPacket(receivedData, receivedData.length);
             receiverSocket.receive(currentPacket);
 
-            System.out.println("Suppose to receive packet number " + Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(currentPacket)));
+            System.out.println("Suppose to receive packet number " + nextSeqNumber);
+            System.out.println("Received packet number " + Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(currentPacket)));
             if(Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(currentPacket)) == nextSeqNumber) {
 
-                System.out.println("Receiving packet " + Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(currentPacket)));
-                if(Utils.isLastPacket(currentPacket)){
+                System.out.println("Received supposed packet.");
+
+                if(Utils.isLastPacket(currentPacket)) {
                     receivedPackets.add(currentPacket);
                     System.out.println("Last packet.");
                     sendAck(currentPacket);
@@ -36,14 +38,14 @@ public class Receiver {
                 }
                 else {
                     receivedPackets.add(currentPacket);
-                    System.out.println("Continuing receiving packets.");
+                    System.out.println("Sending ACK" + Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(currentPacket)));
                     sendAck(currentPacket);
                     nextSeqNumber++;
                 }
             } else if(!receivedPackets.isEmpty()) {
                 DatagramPacket lastValidPacketReceived = receivedPackets.get(receivedPackets.size() - 1);
                 sendAck(lastValidPacketReceived);
-                System.out.println("Sending ACK for packet number " + receivedPackets.get(receivedPackets.size() - 1));
+                System.out.println("Sending previous valid ACK " + Utils.byteArrayToInt(receivedPackets.get(receivedPackets.size() - 1).getData()));
             }
         }
         System.out.println("Received all the packets and sent all the ACKs.");

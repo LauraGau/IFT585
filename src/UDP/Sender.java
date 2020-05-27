@@ -6,7 +6,7 @@ import java.util.*;
 
 public class Sender {
     public static final int MAX_BYTES_PACKET = 65000;
-    public static final int TIMEOUT = 60;
+    public static final int TIMEOUT = 10000;
     public static final int WINDOW = 4;
 
     DatagramSocket senderSocket = new DatagramSocket();
@@ -19,12 +19,14 @@ public class Sender {
     public Sender() throws SocketException, UnknownHostException {
     }
 
-    public void send(ArrayList<DatagramPacket> packetlist) throws IOException {
+    public void send(ArrayList<DatagramPacket> packetlist) throws IOException, InterruptedException {
         System.out.println("Sending packets...");
 
         while(true) {
 
             while((lastSeqNumberSent - lastAckReceived < WINDOW) && (packetsAlreadySent.size() < packetlist.size())) {
+                Thread.sleep(50);
+                DatagramPacket d = packetlist.get(indexOfPacketToSend);
                 senderSocket.send(packetlist.get(indexOfPacketToSend));
                 packetsAlreadySent.add(packetlist.get(indexOfPacketToSend));
                 lastSeqNumberSent++;
@@ -61,7 +63,6 @@ public class Sender {
         System.out.println("Splitting file into packets...");
 
         ArrayList<DatagramPacket> listOfPacketsToSend = new ArrayList<>();
-        byte[] dataToSend = new byte[MAX_BYTES_PACKET];
         int seqNumber = 0;
         boolean isLast;
         int splitBeginning = 0;
@@ -71,7 +72,7 @@ public class Sender {
         // Pour tous les paquets qu'on devrait avoir
         int nbPackets = (int) Math.ceil((float)file.length / (float)MAX_BYTES_PACKET);
         for(int i = 0; i < nbPackets; i++) {
-
+            byte[] dataToSend = new byte[MAX_BYTES_PACKET];
             isLast = (i == file.length - 1);
             byte[] isLastInBytes = Utils.boolToByteArray(isLast);
             byte[] seqNumberInBytes = Utils.intToByteArray(seqNumber);
@@ -91,6 +92,8 @@ public class Sender {
             for(int k = 0; k < dataToCopy.length; k++) {
                 dataToSend[k + 5] = dataToCopy[k];
             }
+            splitBeginning += jump;
+            splitEnding += jump;
             listOfPacketsToSend.add(new DatagramPacket(dataToSend, dataToSend.length, ipAddressToSend, 9876));
         }
         return listOfPacketsToSend;
