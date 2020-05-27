@@ -1,6 +1,9 @@
 package UDP;
 
+import java.io.File;
 import java.net.DatagramPacket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class Application {
@@ -9,8 +12,13 @@ public class Application {
 
         if(args[0].equals("Sender") && args.length == 2) {
             Sender sender = new Sender();
-            byte[] fileInBytes = args[1].getBytes();
+
+            byte[] fileInBytes = Files.readAllBytes(Paths.get(args[1]));
+            System.out.println("File is " + fileInBytes.length + " bytes.");
+
             ArrayList<DatagramPacket> packetlist = sender.splitFile(fileInBytes);
+            System.out.println("File is split in " + packetlist.size() + " packets.");
+
             sender.send(packetlist);
 
         } else if(args[0].equals("Receiver")) {

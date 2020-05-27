@@ -17,17 +17,21 @@ public class Utils {
         return new byte[] {(byte) (b ? 1 : 0)};
     }
 
-    public static boolean byteArrayToBool(byte b) {
+    public static boolean byteToBool(byte b) {
         return b == 1;
     }
 
-    public static int getPacketSeqNumber(DatagramPacket packet) {
+    public static byte[] getPacketSeqNumberInBytes(DatagramPacket packet) {
         byte[] seqNumberInBytes = new byte[4];
 
         for(int i = 0; i < 4; i++) {
             seqNumberInBytes[i] = packet.getData()[i];
         }
 
-        return byteArrayToInt(seqNumberInBytes);
+        return seqNumberInBytes;
+    }
+
+    public static boolean isLastPacket(DatagramPacket packet) {
+        return Utils.byteToBool(packet.getData()[4]);
     }
 }
