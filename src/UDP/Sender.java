@@ -5,9 +5,19 @@ import java.net.*;
 import java.util.*;
 
 public class Sender {
+
+    // Couleurs pour la sortie du terminal
+    public static final String RED_BOLD = "\033[1;31m";    // RED
+    public static final String GREEN_BOLD = "\033[1;32m";  // GREEN
+    public static final String YELLOW_BOLD = "\033[1;33m"; // YELLOW
+    public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
+    public static final String RESET = "\033[0m";  // Text Reset
+
+
     public static final int MAX_BYTES_PACKET = 65000;
-    public static final int TIMEOUT = 10000;
+    public static final int TIMEOUT = 100;
     public static final int WINDOW = 4;
+    public static final double PROBABILITY = 0.15;
 
     DatagramSocket senderSocket = new DatagramSocket();
     int indexOfPacketToSend = 0;
@@ -20,47 +30,61 @@ public class Sender {
     }
 
     public void send(ArrayList<DatagramPacket> packetlist) throws IOException, InterruptedException {
-        System.out.println("Sending packets...");
+        System.out.println(CYAN_BOLD + "Sending packets..." + RESET);
 
         while(true) {
 
             while((lastSeqNumberSent - lastAckReceived < WINDOW) && (packetsAlreadySent.size() < packetlist.size())) {
-                Thread.sleep(50);
+                Thread.sleep(25);
                 DatagramPacket d = packetlist.get(indexOfPacketToSend);
-                senderSocket.send(packetlist.get(indexOfPacketToSend));
-                packetsAlreadySent.add(packetlist.get(indexOfPacketToSend));
                 lastSeqNumberSent++;
+                System.out.println(YELLOW_BOLD + "Sending packet number " + lastSeqNumberSent + "..." + RESET);
+                // Probabilité de perdre des paquets
+                if(Math.random() > PROBABILITY){
+                    senderSocket.send(packetlist.get(indexOfPacketToSend));
+                }else{
+                    System.out.println(RED_BOLD + "[X] Lost packet with sequence number " + lastSeqNumberSent + RESET);
+                }
+                packetsAlreadySent.add(packetlist.get(indexOfPacketToSend));
+
                 indexOfPacketToSend++;
-                System.out.println("Sendind packet number " + lastSeqNumberSent + "...");
+
             }
 
             DatagramPacket ackPacket = new DatagramPacket(new byte[4], 4);
 
             try{
                 senderSocket.setSoTimeout(TIMEOUT);
-                System.out.println("Waiting to receive ACK number " + (lastAckReceived + 1));
+                System.out.println("Waiting to receive ACK number " + (lastAckReceived + 1) + "...");
                 senderSocket.receive(ackPacket);
                 lastAckReceived = Utils.byteArrayToInt(ackPacket.getData());
-                System.out.println("ACK number " + lastAckReceived + " was received.");
+                System.out.println(GREEN_BOLD + "Received ACK number " + lastAckReceived + "." + RESET);
 
                 if(lastAckReceived == packetlist.size() - 1) {
-                    System.out.println("The last packet was received.");
+                    System.out.println(GREEN_BOLD + "The last packet was received." + RESET);
                     break;
                 }
 
             } catch (SocketTimeoutException s) {
-                System.out.println("Time expired.");
+                System.out.println(RED_BOLD + "Time expired." + RESET);
                 for(int i = lastAckReceived + 1; i <= lastSeqNumberSent; i++) {
-                    System.out.println("Resending packet number " + i + "...");
-                    senderSocket.send(packetsAlreadySent.get(i));
+                    System.out.println(YELLOW_BOLD + "Resending packet number " + i + "..." + RESET);
+
+                    // Send with some probability of loss
+                    if(Math.random() > PROBABILITY){
+                        senderSocket.send(packetsAlreadySent.get(i));
+                    }else{
+                        System.out.println(RED_BOLD + "[X] Lost resending of packet with sequence number " + i + RESET);
+                    }
+
                 }
             }
         }
-        System.out.println("All packets sent and received.");
+        System.out.println(GREEN_BOLD + "All packets sent and received." + RESET);
     }
 
     public ArrayList<DatagramPacket> splitFile(byte[] file) {
-        System.out.println("Splitting file into packets...");
+        System.out.println(CYAN_BOLD + "Splitting file into packets..." + RESET);
 
         ArrayList<DatagramPacket> listOfPacketsToSend = new ArrayList<>();
         int seqNumber = 0;
@@ -73,7 +97,7 @@ public class Sender {
         int nbPackets = (int) Math.ceil((float)file.length / (float)MAX_BYTES_PACKET);
         for(int i = 0; i < nbPackets; i++) {
             byte[] dataToSend = new byte[MAX_BYTES_PACKET];
-            isLast = (i == file.length - 1);
+            isLast = (i == nbPackets - 1);
             byte[] isLastInBytes = Utils.boolToByteArray(isLast);
             byte[] seqNumberInBytes = Utils.intToByteArray(seqNumber);
             seqNumber ++;

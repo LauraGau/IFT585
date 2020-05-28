@@ -7,6 +7,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class Application {
+    public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
+    public static final String RED_BOLD = "\033[1;31m";    // RED
+    public static final String RESET = "\033[0m";  // Text Reset
 
     public static void main(String args[]) throws Exception{
 
@@ -14,10 +17,10 @@ public class Application {
             Sender sender = new Sender();
 
             byte[] fileInBytes = Files.readAllBytes(Paths.get(args[1]));
-            System.out.println("File is " + fileInBytes.length + " bytes.");
+            System.out.println(CYAN_BOLD + "File is " + fileInBytes.length + " bytes." + RESET);
 
             ArrayList<DatagramPacket> packetlist = sender.splitFile(fileInBytes);
-            System.out.println("File is split in " + packetlist.size() + " packets.");
+            System.out.println(CYAN_BOLD + "File is split in " + packetlist.size() + " packets." + RESET);
 
             sender.send(packetlist);
 
@@ -25,7 +28,7 @@ public class Application {
             Receiver receiver = new Receiver();
             receiver.waitAndReceive();
         } else {
-            System.out.println("Invalid arguments. 1st argument is either 'Sender' or 'Receiver'. 2nd is the binary file.");
+            System.out.println(RED_BOLD + "Invalid arguments. 1st argument is either 'Sender' or 'Receiver'. 2nd is the binary file." + RESET);
         }
 
     }
