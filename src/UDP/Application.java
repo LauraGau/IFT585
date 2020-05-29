@@ -11,10 +11,10 @@ import java.util.ArrayList;
 public class Application {
 
     public static void main(String args[]) throws Exception{
-        JFrame frame = new JFrame("User Datagram Protocol");
         Window app = new Window();
 
         while(true) {
+            Thread.sleep(1);
             if(app.initialized) {
                 break;
             }

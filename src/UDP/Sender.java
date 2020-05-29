@@ -31,7 +31,7 @@ public class Sender {
         while(true) {
 
             while((lastSeqNumberSent - lastAckReceived < WINDOW) && (packetsAlreadySent.size() < packetlist.size())) {
-                Thread.sleep(150);
+                Thread.sleep(20);
                 DatagramPacket d = packetlist.get(indexOfPacketToSend);
                 senderSocket.send(packetlist.get(indexOfPacketToSend));
                 packetsAlreadySent.add(packetlist.get(indexOfPacketToSend));
@@ -48,7 +48,7 @@ public class Sender {
                 senderSocket.receive(ackPacket);
                 lastAckReceived = Utils.byteArrayToInt(ackPacket.getData());
                 currentStep.setText("ACK number " + lastAckReceived + " was received.");
-                packetDeliveries.append("Packet number " + lastSeqNumberSent + " was delivered.\n");
+                packetDeliveries.append("Packet number " + lastAckReceived + " was delivered.\n");
                 progressBar.setValue(lastAckReceived);
 
                 if(lastAckReceived == packetlist.size() - 1) {
