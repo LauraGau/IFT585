@@ -3,12 +3,15 @@ package UDP;
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
-import java.io.IOException;
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Receiver {
@@ -74,6 +77,7 @@ public class Receiver {
             }
         }
         currentStep.setText("Received all the packets and sent all the ACKs.");
+        rebuildFile(receivedPackets);
     }
 
     public void sendAck(DatagramPacket packet) throws IOException {
@@ -87,6 +91,36 @@ public class Receiver {
             currentStep.setText("[X] Lost ack with sequence number " + Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(packet)));
             logHistory.append("[X] Lost ack with sequence number " + Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(packet)) + "\n");
         }
+    }
+
+    private void rebuildFile(ArrayList<DatagramPacket> receivedPackets) throws IOException {
+        // Temporary new file with extra bytes of the last packet
+        String tempPath = System.getProperty("user.dir") + "\\" + "rebuildedFileTemp";
+        File rebuildedNewFile = new File(tempPath);
+        OutputStream newOs = new FileOutputStream(rebuildedNewFile);
+
+        for(DatagramPacket packet : receivedPackets) {
+            byte[] dataToCopy = Arrays.copyOfRange(packet.getData(), 5, 65000);
+            newOs.write(dataToCopy);
+        }
+        newOs.close();
+
+        // Shrinked new file
+        String goodPath = System.getProperty("user.dir") + "\\" + "rebuildedFile";
+        File rebuildedNewShrinkedFile = new File(goodPath);
+        OutputStream newShrinkedOs = new FileOutputStream(rebuildedNewShrinkedFile);
+        byte[] newFile = Files.readAllBytes(Paths.get(".\\rebuildedFileTemp"));
+        int newFileLength = newFile.length;
+        int shrinkNewFileLength = 0;
+
+        for(int i = newFileLength - 1; newFile[i] == 0; i--) {
+            shrinkNewFileLength = i;
+        }
+
+        byte[] dataShrinkedToCopy = Arrays.copyOfRange(newFile, 0, shrinkNewFileLength);
+        newShrinkedOs.write(dataShrinkedToCopy);
+        newShrinkedOs.close();
+        rebuildedNewFile.delete();
     }
 
     private void createGUI() {
