@@ -1,5 +1,8 @@
 package UDP;
 
+import javax.swing.*;
+import javax.swing.text.DefaultCaret;
+import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -7,85 +10,88 @@ import java.util.*;
 public class Sender {
 
     // Couleurs pour la sortie du terminal
-    public static final String RED_BOLD = "\033[1;31m";    // RED
-    public static final String GREEN_BOLD = "\033[1;32m";  // GREEN
-    public static final String YELLOW_BOLD = "\033[1;33m"; // YELLOW
     public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
     public static final String RESET = "\033[0m";  // Text Reset
-
 
     public static final int MAX_BYTES_PACKET = 65000;
     public static final int TIMEOUT = 100;
     public static final int WINDOW = 4;
     public static final double PROBABILITY = 0.15;
 
-    DatagramSocket senderSocket = new DatagramSocket();
+    JLabel currentStep;
+    JTextArea logHistory;
+    JProgressBar progressBar;
     int indexOfPacketToSend = 0;
     InetAddress ipAddressToSend = InetAddress.getByName("localhost");
     int lastAckReceived = -1;
     int lastSeqNumberSent = -1;
     ArrayList<DatagramPacket> packetsAlreadySent = new ArrayList<>();
+    DatagramSocket senderSocket = new DatagramSocket();
 
     public Sender() throws SocketException, UnknownHostException {
     }
 
     public void send(ArrayList<DatagramPacket> packetlist) throws IOException, InterruptedException {
-        System.out.println(CYAN_BOLD + "Sending packets..." + RESET);
+        createGUI(packetlist.size());
+        logHistory.append("Sending packets...\n");
 
         while(true) {
 
             while((lastSeqNumberSent - lastAckReceived < WINDOW) && (packetsAlreadySent.size() < packetlist.size())) {
-                Thread.sleep(25);
+                Thread.sleep(20);
                 DatagramPacket d = packetlist.get(indexOfPacketToSend);
                 lastSeqNumberSent++;
-                System.out.println(YELLOW_BOLD + "Sending packet number " + lastSeqNumberSent + "..." + RESET);
+                currentStep.setText("Sending packet number " + lastSeqNumberSent + "...");
+                logHistory.append("Sending packet number " + lastSeqNumberSent + "...\n");
                 // Probabilité de perdre des paquets
                 if(Math.random() > PROBABILITY){
                     senderSocket.send(packetlist.get(indexOfPacketToSend));
                 }else{
-                    System.out.println(RED_BOLD + "[X] Lost packet with sequence number " + lastSeqNumberSent + RESET);
+                    logHistory.append("[X] Lost packet with sequence number " + lastSeqNumberSent + "\n");
                 }
                 packetsAlreadySent.add(packetlist.get(indexOfPacketToSend));
-
                 indexOfPacketToSend++;
-
             }
 
             DatagramPacket ackPacket = new DatagramPacket(new byte[4], 4);
 
             try{
                 senderSocket.setSoTimeout(TIMEOUT);
-                System.out.println("Waiting to receive ACK number " + (lastAckReceived + 1) + "...");
+                currentStep.setText("Waiting to receive ACK number " + (lastAckReceived + 1) + "...");
+                logHistory.append("Waiting to receive ACK number " + (lastAckReceived + 1) + "...\n");
                 senderSocket.receive(ackPacket);
                 lastAckReceived = Utils.byteArrayToInt(ackPacket.getData());
-                System.out.println(GREEN_BOLD + "Received ACK number " + lastAckReceived + "." + RESET);
+                currentStep.setText("Received ACK number " + lastAckReceived);
+                logHistory.append("Received ACK number  " + lastAckReceived + ".\n");
+                progressBar.setValue(lastAckReceived);
+
 
                 if(lastAckReceived == packetlist.size() - 1) {
-                    System.out.println(GREEN_BOLD + "The last packet was received." + RESET);
+                    logHistory.append("The last packet was received.\n");
                     break;
                 }
 
             } catch (SocketTimeoutException s) {
-                System.out.println(RED_BOLD + "Time expired." + RESET);
+                currentStep.setText("Time expired.");
+                logHistory.append("Time expired.\n");
                 for(int i = lastAckReceived + 1; i <= lastSeqNumberSent; i++) {
-                    System.out.println(YELLOW_BOLD + "Resending packet number " + i + "..." + RESET);
-
+                    currentStep.setText("Resending packet number " + i + "...");
+                    logHistory.append("Resending packet number " + i + "...\n");
+                    senderSocket.send(packetsAlreadySent.get(i));
                     // Send with some probability of loss
                     if(Math.random() > PROBABILITY){
                         senderSocket.send(packetsAlreadySent.get(i));
                     }else{
-                        System.out.println(RED_BOLD + "[X] Lost resending of packet with sequence number " + i + RESET);
+                        logHistory.append("[X] Lost resending of packet with sequence number "+ i + "\n");
                     }
 
                 }
             }
         }
-        System.out.println(GREEN_BOLD + "All packets sent and received." + RESET);
+        currentStep.setText("All packets sent and received.");
     }
 
     public ArrayList<DatagramPacket> splitFile(byte[] file) {
-        System.out.println(CYAN_BOLD + "Splitting file into packets..." + RESET);
-
         ArrayList<DatagramPacket> listOfPacketsToSend = new ArrayList<>();
         int seqNumber = 0;
         boolean isLast;
@@ -121,5 +127,48 @@ public class Sender {
             listOfPacketsToSend.add(new DatagramPacket(dataToSend, dataToSend.length, ipAddressToSend, 9876));
         }
         return listOfPacketsToSend;
+    }
+
+    private void createGUI(int numberOfPackets) {
+        JFrame frame = new JFrame("UDP - Sender progress");
+        JPanel mainPanel = new JPanel();
+        JProgressBar progressBar = new JProgressBar(0, numberOfPackets - 1);
+        JTextArea textArea = new JTextArea("\n",10,30);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        JLabel label = new JLabel("...", JLabel.CENTER);
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setPreferredSize(new Dimension(400, 300));
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        progressBar.setStringPainted(true);
+        progressBar.setValue(0);
+        progressBar.setSize(new Dimension(mainPanel.getPreferredSize().width - 15, 20));
+        progressBar.setBackground(Color.WHITE);
+        progressBar.setForeground(Color.BLUE);
+        label.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        textArea.setEnabled(false);
+        textArea.setText("");
+        textArea.setFont(new Font("Serif", Font.BOLD, 12));
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        DefaultCaret caret = (DefaultCaret) textArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
+        mainPanel.add(progressBar);
+        mainPanel.add(Box.createRigidArea(new Dimension(1, 10)));
+        mainPanel.add(label);
+        mainPanel.add(Box.createRigidArea(new Dimension(1, 25)));
+        mainPanel.add(scrollPane);
+        mainPanel.add(Box.createRigidArea(new Dimension(1, 25)));
+        frame.getContentPane().add(mainPanel);
+
+        frame.setLocation(501, 50);
+        frame.pack();
+        frame.setVisible(true);
+
+        this.logHistory = textArea;
+        this.currentStep = label;
+        this.progressBar = progressBar;
     }
 }
