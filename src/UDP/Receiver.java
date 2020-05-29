@@ -14,25 +14,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Receiver {
-
-    // Couleurs pour la sortie du terminal
-    public static final String RED_BOLD = "\033[1;31m";    // RED
-    public static final String GREEN_BOLD = "\033[1;32m";  // GREEN
-    public static final String YELLOW_BOLD = "\033[1;33m"; // YELLOW
-    public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
-    public static final String RESET = "\033[0m";  // Text Reset
+public class Receiver implements Runnable {
 
     int nextSeqNumber = 0;
     public static final double PROBABILITY = 0.15;
     ArrayList<DatagramPacket> receivedPackets = new ArrayList<>();
-    DatagramSocket receiverSocket = new DatagramSocket(9876);
+    DatagramSocket receiverSocket;
     JTextArea logHistory;
     JLabel currentStep;
     JLabel nbPacketsReceivedLabel;
+    int port;
 
 
-    public Receiver() throws SocketException {
+    public Receiver(int portToUse) throws SocketException {
+        receiverSocket = new DatagramSocket(portToUse);
+        port = portToUse;
     }
 
     public void waitAndReceive() throws IOException, InterruptedException {
@@ -95,7 +91,7 @@ public class Receiver {
 
     private void rebuildFile(ArrayList<DatagramPacket> receivedPackets) throws IOException {
         // Temporary new file with extra bytes of the last packet
-        String tempPath = System.getProperty("user.dir") + "\\" + "rebuildedFileTemp";
+        String tempPath = System.getProperty("user.dir") + "\\" + "rebuildedFileTemp" + port;
         File rebuildedNewFile = new File(tempPath);
         OutputStream newOs = new FileOutputStream(rebuildedNewFile);
 
@@ -106,10 +102,10 @@ public class Receiver {
         newOs.close();
 
         // Shrinked new file
-        String goodPath = System.getProperty("user.dir") + "\\" + "rebuildedFile";
+        String goodPath = System.getProperty("user.dir") + "\\" + "rebuildedFile" + port;
         File rebuildedNewShrinkedFile = new File(goodPath);
         OutputStream newShrinkedOs = new FileOutputStream(rebuildedNewShrinkedFile);
-        byte[] newFile = Files.readAllBytes(Paths.get(".\\rebuildedFileTemp"));
+        byte[] newFile = Files.readAllBytes(Paths.get(".\\rebuildedFileTemp" + port));
         int newFileLength = newFile.length;
         int shrinkNewFileLength = 0;
 
@@ -124,7 +120,7 @@ public class Receiver {
     }
 
     private void createGUI() {
-        JFrame frame = new JFrame("UDP - Receiver progress");
+        JFrame frame = new JFrame("UDP - Receiver progress for port: " + port);
         JPanel mainPanel = new JPanel();
         JTextArea textArea = new JTextArea("Steps\n",10,30);
         JScrollPane scrollPane = new JScrollPane(textArea);
@@ -162,5 +158,16 @@ public class Receiver {
         this.logHistory = textArea;
         this.currentStep = label;
         this.nbPacketsReceivedLabel = label2;
+    }
+
+    @Override
+    public void run() {
+        try {
+            waitAndReceive();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

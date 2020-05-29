@@ -25,7 +25,7 @@ public class Window extends JFrame {
         JTextField filePath = new JTextField(15);
         JButton startButton = new JButton("Start");
         JRadioButton b1 = new JRadioButton("Sender");
-        JRadioButton b2 = new JRadioButton("Receiver");
+        JRadioButton b2 = new JRadioButton("Server");
         ButtonGroup group1 = new ButtonGroup();
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -46,7 +46,7 @@ public class Window extends JFrame {
             }
         });
 
-        b2.setActionCommand("Receiver");
+        b2.setActionCommand("Server");
         b2.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 filePanel.setVisible(false);

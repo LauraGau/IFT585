@@ -9,10 +9,6 @@ import java.util.*;
 
 public class Sender {
 
-    // Couleurs pour la sortie du terminal
-    public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
-    public static final String RESET = "\033[0m";  // Text Reset
-
     public static final int MAX_BYTES_PACKET = 65000;
     public static final int TIMEOUT = 100;
     public static final int WINDOW = 4;
@@ -31,8 +27,20 @@ public class Sender {
     public Sender() throws SocketException, UnknownHostException {
     }
 
-    public void send(ArrayList<DatagramPacket> packetlist) throws IOException, InterruptedException {
-        createGUI(packetlist.size());
+    public void connexionRequest(byte[] fileTosplit) throws IOException, InterruptedException {
+        byte[] dataRequest = Utils.boolToByteArray(true);
+        byte[] dataResponse = new byte[4];
+        DatagramPacket conRequest = new DatagramPacket(dataRequest, dataRequest.length, ipAddressToSend, 9876);
+        DatagramPacket conResponse = new DatagramPacket(dataResponse, dataResponse.length);
+        senderSocket.send(conRequest);
+        senderSocket.receive(conResponse);
+
+        send(fileTosplit, Utils.byteArrayToInt(conResponse.getData()));
+    }
+
+    public void send(byte[] fileToSplit, int portToUse) throws IOException, InterruptedException {
+        ArrayList<DatagramPacket> packetlist = splitFile(fileToSplit, portToUse);
+        createGUI(packetlist.size(), portToUse);
         logHistory.append("Sending packets...\n");
 
         while(true) {
@@ -91,7 +99,7 @@ public class Sender {
         currentStep.setText("All packets sent and received.");
     }
 
-    public ArrayList<DatagramPacket> splitFile(byte[] file) {
+    public ArrayList<DatagramPacket> splitFile(byte[] file, int portToUse) {
         ArrayList<DatagramPacket> listOfPacketsToSend = new ArrayList<>();
         int seqNumber = 0;
         boolean isLast;
@@ -124,13 +132,13 @@ public class Sender {
             }
             splitBeginning += jump;
             splitEnding += jump;
-            listOfPacketsToSend.add(new DatagramPacket(dataToSend, dataToSend.length, ipAddressToSend, 9876));
+            listOfPacketsToSend.add(new DatagramPacket(dataToSend, dataToSend.length, ipAddressToSend, portToUse));
         }
         return listOfPacketsToSend;
     }
 
-    private void createGUI(int numberOfPackets) {
-        JFrame frame = new JFrame("UDP - Sender progress");
+    private void createGUI(int numberOfPackets, int portToUse) {
+        JFrame frame = new JFrame("UDP - Sender progress for data sent to port: " + portToUse);
         JPanel mainPanel = new JPanel();
         JProgressBar progressBar = new JProgressBar(0, numberOfPackets - 1);
         JTextArea textArea = new JTextArea("\n",10,30);

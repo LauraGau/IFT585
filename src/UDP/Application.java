@@ -23,14 +23,13 @@ public class Application {
         if(app.side.equals("Sender")) {
             Sender sender = new Sender();
             byte[] fileInBytes = Files.readAllBytes(Paths.get(app.path));
-            ArrayList<DatagramPacket> packetlist = sender.splitFile(fileInBytes);
             app.dispose();
-            sender.send(packetlist);
+            sender.connexionRequest(fileInBytes);
 
-        } else if(app.side.equals("Receiver")) {
+        } else if(app.side.equals("Server")) {
+            Server server = new Server();
             app.dispose();
-            Receiver receiver = new Receiver();
-            receiver.waitAndReceive();
+            server.waitForConnexionRequest();
         }
     }
 }
