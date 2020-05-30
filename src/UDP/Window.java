@@ -15,6 +15,11 @@ public class Window extends JFrame {
         getInfoGUI(this);
     }
 
+       /**
+ *Creation du GUI
+ * @param {JFrame} Jframe a initialiser
+ */
+
     private void getInfoGUI(JFrame frame) {
         JPanel mainPanel = new JPanel();
         JPanel jbuttonPanel = new JPanel();

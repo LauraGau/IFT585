@@ -20,6 +20,8 @@ public class Application {
             }
         }
 
+        //Conditions determinant si on veut partir une fenetre serveur ou client (Sender)
+
         if(app.side.equals("Sender")) {
             Sender sender = new Sender();
             byte[] fileInBytes = Files.readAllBytes(Paths.get(app.path));

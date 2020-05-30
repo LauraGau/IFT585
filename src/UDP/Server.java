@@ -9,12 +9,21 @@ public class Server {
 
     public Server() throws SocketException {
     }
+
+    /**
+ * Partir le thread qui servira de canal de communication entre le sender et le receiver
+ */
     
     public void startReceiver() throws SocketException {
         Thread t = new Thread(new Receiver(receiverPort));
         t.start();
         receiverPort++;
     }
+
+/**
+ * Envoit du numero de port a utiliser entre le 'sender' et le 'receiver'
+ * @param {DatagramPaquet} paquet contenant le numero de port
+ */    
 
     public void sendPortNumber(DatagramPacket connexionRequest) throws IOException {
         byte[] portNumberToUseInBytes = Utils.intToByteArray(receiverPort);
@@ -27,6 +36,11 @@ public class Server {
         serverSocket.send(connexionResponse);
         startReceiver();
     }
+
+    /**
+ * Attente de confirmation de connection (numero de port)
+ * 
+ */
 
     public void waitForConnexionRequest() throws IOException {
         while(true) {

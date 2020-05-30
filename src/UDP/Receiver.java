@@ -31,6 +31,11 @@ public class Receiver implements Runnable {
         port = portToUse;
     }
 
+    /**
+ * Création du GUI
+ * Attente de nouveaux paquets et réception.
+ */
+
     public void waitAndReceive() throws IOException, InterruptedException {
         createGUI();
 
@@ -76,6 +81,11 @@ public class Receiver implements Runnable {
         rebuildFile(receivedPackets);
     }
 
+ /**Envoit des ACKs vers le 'sender' pour chaque paquet reçu
+ * 
+ * @param {DatagramPacket} Packets contenant les numéros de ACKs
+ */
+
     public void sendAck(DatagramPacket packet) throws IOException {
         byte[] ackData = Utils.getPacketSeqNumberInBytes(packet);
         DatagramPacket ackPacket = new DatagramPacket(ackData, ackData.length, packet.getAddress(), packet.getPort());
@@ -88,6 +98,11 @@ public class Receiver implements Runnable {
             logHistory.append("[X] Lost ack with sequence number " + Utils.byteArrayToInt(Utils.getPacketSeqNumberInBytes(packet)) + "\n");
         }
     }
+
+    /**
+ * Reconstruction du fichier avec les différents paquets reçus par le sender
+ * @param {ArrayList <DatagramPacket>}  liste de paquets reçus 
+ */
 
     private void rebuildFile(ArrayList<DatagramPacket> receivedPackets) throws IOException {
         // Temporary new file with extra bytes of the last packet
@@ -119,6 +134,10 @@ public class Receiver implements Runnable {
         rebuildedNewFile.delete();
     }
 
+    /**
+ * Creation de l'interface
+ * 
+ */
     private void createGUI() {
         JFrame frame = new JFrame("UDP - Receiver progress for port: " + port);
         JPanel mainPanel = new JPanel();
@@ -159,6 +178,11 @@ public class Receiver implements Runnable {
         this.currentStep = label;
         this.nbPacketsReceivedLabel = label2;
     }
+
+/**
+ * Code appelé lorsque la fonction start du thread client est appelé
+ * 
+ */
 
     @Override
     public void run() {

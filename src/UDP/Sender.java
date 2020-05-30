@@ -27,6 +27,11 @@ public class Sender {
     public Sender() throws SocketException, UnknownHostException {
     }
 
+    /**
+ * Envoit d'une demande de connexion au serveur afin de partir un nouvau thread et d'etablir la connexion
+ * @param {byte[]} array d'octets contenant la demande de connexion
+ */
+
     public void connexionRequest(byte[] fileTosplit) throws IOException, InterruptedException {
         byte[] dataRequest = Utils.boolToByteArray(true);
         byte[] dataResponse = new byte[4];
@@ -37,6 +42,12 @@ public class Sender {
 
         send(fileTosplit, Utils.byteArrayToInt(conResponse.getData()));
     }
+
+    /**
+ * Envoit du fichier vers le 'receiver'
+ * @param {byte[]} fichier a separe en paquets et a envoyer
+ * @param {int} port de destination
+ */
 
     public void send(byte[] fileToSplit, int portToUse) throws IOException, InterruptedException {
         ArrayList<DatagramPacket> packetlist = splitFile(fileToSplit, portToUse);
@@ -99,6 +110,12 @@ public class Sender {
         currentStep.setText("All packets sent and received.");
     }
 
+    /**
+ * Separation du fichier en paquets de 65000 octets
+ * @param {byte[]} fichier a separe en paquets
+ * @param {int} port de destination
+ */
+
     public ArrayList<DatagramPacket> splitFile(byte[] file, int portToUse) {
         ArrayList<DatagramPacket> listOfPacketsToSend = new ArrayList<>();
         int seqNumber = 0;
@@ -136,6 +153,12 @@ public class Sender {
         }
         return listOfPacketsToSend;
     }
+
+    /**
+ * Creation du GUI
+ * @param {int} nombre de paquets a envoyer
+ * @param {int} port de destination
+ */
 
     private void createGUI(int numberOfPackets, int portToUse) {
         JFrame frame = new JFrame("UDP - Sender progress for data sent to port: " + portToUse);
